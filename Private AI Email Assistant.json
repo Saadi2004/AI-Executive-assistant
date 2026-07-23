@@ -1,0 +1,183 @@
+{
+  "name": "Private AI Email Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -368,
+        -48
+      ],
+      "id": "a59979f9-131d-4e3e-843f-d5e98033c93d",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VaDKpGx3OoyeHXKr",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "dataPropertyName": "text",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "email_body",
+              "cssSelector": "body"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        -192,
+        -48
+      ],
+      "id": "1d065a23-b93e-4186-a906-a29c59588aee",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=[SYSTEM_INSTRUCTION]\nYou are the Executive Assistant to Muhammad Saad (Founder). Your sole task is to process incoming emails with technical precision.\n\n[CONSTRAINTS]\n- NO introductory text. Do NOT say \"Here is the output\" or \"Below is the processed email\".\n- Start DIRECTLY with \"Sender:\".\n- Output format must be PLAIN TEXT only.\n- NO bold characters, NO asterisks (**), NO hashtags (#), NO italics.\n- NEVER address the recipient as \"Farzeen\". You are writing AS Farzeen.\n- Extract the sender's name and designation from the signature/bottom of the email.\n\n[TASK_1: SUMMARY]\nFormat the summary exactly as follows:\nSender:\n[Sender Name], [Designation]\nPurpose:\n[The specific request, action item, or meeting details]\n\n[TASK_2: DRAFT_RESPONSE]\nLabel this section as \"Respond Draft:\". Follow these strict rules:\n1. Greeting: \"Hi [Sender's First Name],\" (Use ONLY the first name).\n2. No Fillers: Do NOT use \"I hope you are well\", \"Thank you\", \"I am glad\", or \"I am thrilled\".\n3. Direct Content: Mention the specific proposal (e.g., the webinar, the masterclass, etc.).\n4. Call to Action: Ask for the next step (e.g., \"Please share the meeting link\").\n5. Signature: Must be exactly as follows:\nBest regards,\nMuhammad Saad\nFounder, techsaadi\n\n[INPUT_EMAIL_CONTENT]\n{{ $json.email_body }}\n\n[OUTPUT]",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        16,
+        -48
+      ],
+      "id": "bab66578-7a5c-40ee-88b4-052c84586f0a",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:7b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        176
+      ],
+      "id": "90c94131-741a-4e01-9a95-b07643865778",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "bc91mFc8dY0qnuvn",
+          "name": "Ollama account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Gmail Trigger').item.json.to.text }}",
+        "subject": "=Response  {{ $('Gmail Trigger').item.json.headers.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        368,
+        -32
+      ],
+      "id": "5f628ca0-3254-4f82-a391-acba2a28bdee",
+      "name": "Send a message",
+      "webhookId": "6de2ff0e-55d7-45e1-91b6-576481efe75b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VaDKpGx3OoyeHXKr",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "bd63e049-c1d7-4c0b-b087-c831e6b266bd",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d657fb8887c9543b5391f17e3abf26f6193cdebbb5807aada358b86ee0e66747"
+  },
+  "nodeGroups": [],
+  "id": "yjwXQFIcutxsmFy1",
+  "tags": [
+    {
+      "name": "OLLAMA",
+      "id": "lTWBelMRjUdg6caM",
+      "updatedAt": "2026-07-23T00:58:35.136Z",
+      "createdAt": "2026-07-23T00:58:35.136Z"
+    }
+  ]
+}
